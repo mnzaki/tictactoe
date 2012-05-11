@@ -12,6 +12,7 @@ horizontal(X, [_, _, _ | Board]):- horizontal(X, Board).
 vertical(X, [X, _, _ | Board]):- vertical(X, Board).
 vertical(X, [X, _]).
 vertical(X, [X]).
+vertical(_, []).
 
 diagonal(X, [X, _, _, _, X, _, _, _, X]).
 diagonal(X, [_, _, X, _, X, _, X, _, _]).
@@ -31,31 +32,38 @@ set_nth1(1, X, [_|T], [X|T]):- !.
 set_nth1(N, X, [H|T], [H|R]):-
     N1 is N - 1, set_nth1(N1, X, T, R).
 
-next_move(10, Board, Board):- !.    
-next_move(Turn, Board, NBoard):-
-    player(Turn, P),
+next_move(P, Board, NBoard):-
     set(P, Board, NBoard).
 
 % Minmax
 myplay(state(_, 1, _), [x,e,e, e,e,e, e,e,e], 0):- !.
 myplay(state(Me, Turn, Board), NBoard, IWon):-
-    Turn1 is Turn + 1,
+    print('Next Move Scores: '),
     aggregate_all(max(V, Board1),
-                  (next_move(Turn, Board, Board1),
-                   minmax(Me, Turn1, Board1, V)),
+                  (next_move(Me, Board, Board1),
+                   minmax(Me, Turn, Board1, V), print(V), print(', ')),
                   max(V, NBoard)),
+    nl,
     (V = 1, win(Me, NBoard) -> IWon = 1; IWon = 0).
 
 minmax(P, _, Board, 1):-
-    win(P, Board), !. 
-minmax(P, 10, Board, V):- !,
-    win(P, Board) -> V = 1; V = 0.
-minmax(P, Turn, Board, -V):-
-    Turn1 is Turn + 1,
-    other(P, P1),
-    aggregate_all(max(V),
-                  (next_move(Turn, Board, Board1),
-                   minmax(P1, Turn1, Board1, V)),
+    win(P, Board), !.
+minmax(_, 9, _, 0):- !.
+minmax(P, Turn, Board, V):-
+    other(P, P1), Turn1 is Turn+1,
+    aggregate_all(min(V1),
+                  (next_move(P1, Board, Board1),
+                   maxmin(P1, Turn1, Board1, V1)),
+                  V).
+
+maxmin(P, _, Board, -1):-
+    win(P, Board), !.
+maxmin(_, 9, _, 0):- !.
+maxmin(P, Turn, Board, V):-
+    other(P, P1), Turn1 is Turn+1,
+    aggregate_all(max(V1),
+                  (next_move(P1, Board, Board1),
+                   minmax(P1, Turn1, Board1, V1)),
                   V).
 
 % I/O and user interaction
